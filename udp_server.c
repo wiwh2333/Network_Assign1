@@ -136,12 +136,17 @@ int main(int argc, char **argv) {
     //PUT
     if (strncmp(buf, "put",3) == 0) {
       valread = recvfrom(sockfd, filename, BUFSIZE, 0,(struct sockaddr *) &clientaddr, &clientlen); if (valread < 0) {error("ERROR in recv");} //FileName
-      strcat(filename, "Server");
-      FILE *fp = fopen(buf + 4, "wb");
+      // printf("File:%s", filename);
+      // for (int i = 0; i<strlen(filename)+1; i++) {
+      //         printf("Character: %c, ASCII Value: %d\n", filename[i], filename[i]);
+      //       }
+      //strcat(filename,'\n');
+      //printf("File:%s", filename);
+      FILE *fp = fopen(filename, "wb");
       if (fp == NULL){perror("Error opening File");}
       valread = recvfrom(sockfd, buf, BUFSIZE, 0,(struct sockaddr *) &clientaddr, &clientlen); if (valread < 0) {error("ERROR in recv");} //Data
       n = fwrite(buf, 1, valread, fp); //Writes valread bytes of data from buf to fp
-      //printf("Written: %d Recieved: %d\n",n, valread);
+      printf("Written: %d Recieved: %d\n",n, valread);
       fclose(fp);
     }
     //DELETE
