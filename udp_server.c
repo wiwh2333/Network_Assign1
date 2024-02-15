@@ -8,12 +8,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <netdb.h>
+#include <dirent.h>
 #include <sys/types.h> 
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#define BUFSIZE 1024
+#define BUFSIZE 22135
 
 /*
  * error - wrapper for perror
@@ -22,6 +23,8 @@ void error(char *msg) {
   perror(msg);
   exit(1);
 }
+
+
 
 int main(int argc, char **argv) {
   int sockfd; /* socket */
@@ -34,6 +37,11 @@ int main(int argc, char **argv) {
   char *hostaddrp; /* dotted decimal host addr string */
   int optval; /* flag value for setsockopt */
   int n; /* message byte size */
+  //Added by William White
+  int valread; /* Used to determine num of elms File reads*/
+  int filesize; /*Stores filesize*/
+  char filename[BUFSIZE]; /*Stores filename*/
+
 
   /* 
    * check command line arguments 
@@ -108,13 +116,65 @@ int main(int argc, char **argv) {
     /* 
      * sendto: echo the input back to the client 
      */
-    n = sendto(sockfd, buf, strlen(buf), 0, 
-	       (struct sockaddr *) &clientaddr, clientlen);
+    n = sendto(sockfd, buf, strlen(buf), 0, (struct sockaddr *) &clientaddr, clientlen);
     if (n < 0) 
       error("ERROR in sendto");
-    
 
-    
+    //Interperet message
+    //GET
+    if (strncmp(buf, "get",3) == 0) {
+      valread = recvfrom(sockfd, filename, BUFSIZE, 0,(struct sockaddr *) &clientaddr, &clientlen); if (valread < 0) {error("ERROR in recv");} //FileName
+      FILE *fp = fopen(buf + 4, "rb"); //Open File
+      if (fp == NULL){perror("Error opening File");}
+      
+      valread = fread(buf, 1, BUFSIZE, fp); //Read BUFSIZE from the file or until file end
+      n = sendto(sockfd, buf, strlen(buf), 0, &clientaddr, clientlen);//Send buf
+      if (n < 0) {error("ERROR in sendto");}
+      printf("Written: %d Recieved: %d\n",n, valread);
+      fclose(fp);
+    }
+    //PUT
+    if (strncmp(buf, "put",3) == 0) {
+      valread = recvfrom(sockfd, filename, BUFSIZE, 0,(struct sockaddr *) &clientaddr, &clientlen); if (valread < 0) {error("ERROR in recv");} //FileName
+      strcat(filename, "Server");
+      FILE *fp = fopen(buf + 4, "wb");
+      if (fp == NULL){perror("Error opening File");}
+      valread = recvfrom(sockfd, buf, BUFSIZE, 0,(struct sockaddr *) &clientaddr, &clientlen); if (valread < 0) {error("ERROR in recv");} //Data
+      n = fwrite(buf, 1, valread, fp); //Writes valread bytes of data from buf to fp
+      printf("Written: %d Recieved: %d\n",n, valread);
+      fclose(fp);
+    }
+    //DELETE
+    if (strncmp(buf, "delete",6) == 0) {
+      valread = recvfrom(sockfd, filename, BUFSIZE, 0,(struct sockaddr *) &clientaddr, &clientlen); if (valread < 0) {error("ERROR in recv");} //FileName
+      if (remove("result") == 0){printf("File %s deleted",filename);}
+      else{ printf("Can't Delete%s",filename);}
+    }
+    //LS
+    if (strncmp(buf, "ls",2) == 0) {
+      struct dirent *entries;
+      char dir_list[BUFSIZE]=""; 
+      DIR *dr = opendir(".");
+
+      if (dr == NULL){ printf("Can't Open");}
+      while((entries = readdir(dr)) != NULL){
+        strcat(dir_list,entries->d_name);
+        strcat(dir_list," ");
+      }
+      closedir(dr);
+      for(int i = 0; i<strlen(dir_list);i++){
+        if (dir_list[i] == '\n') {dir_list[i] = ' ';}
+      }
+      int i =0;
+      while(dir_list[i] != '\0'){
+        printf("Character: %c, ASCII value: %d, IValue%d\n", dir_list[i], dir_list[i], i);
+        i++;
+      }
+      n = sendto(sockfd, dir_list, strlen(dir_list)+1, 0, &clientaddr, clientlen);//Send buf
+      if (n < 0) {error("ERROR in sendto");}
+      
+    }
+    //EXIT
     if (strncmp(buf, "exit",4) == 0) {
             printf("Exiting...\n");
             break;
