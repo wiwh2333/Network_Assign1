@@ -25,11 +25,14 @@ void error(char *msg) {
 int main(int argc, char **argv) {
     int sockfd, portno, n;
     int serverlen , valread;
-    int filesize;
+    int filesize; 
+    int message_length;
     struct sockaddr_in serveraddr;
     struct hostent *server;
     char *hostname;
     char buf[BUFSIZE];
+
+    char filename[BUFSIZE+1] = "test";
 
     /* check command line arguments */
     if (argc != 3) {
@@ -62,6 +65,8 @@ int main(int argc, char **argv) {
     bzero(buf, BUFSIZE);
     printf("Please enter msg: ");
     fgets(buf, BUFSIZE, stdin);
+    message_length = strlen(buf);
+    // printf("LENGHT:%d",message_length);
 
     
     
@@ -88,20 +93,37 @@ int main(int argc, char **argv) {
     }
   //Put Command Recieved
     if (strncmp(buf, "put",3) == 0) {
-            //Send "{File Name}"
-            n = sendto(sockfd, buf + 4, strlen(buf)-4, 0, &serveraddr, serverlen);
-            if (n < 0) {error("ERROR in sendto");}
+            
             //Open {File Name}, and sendto until the file is empty
-            FILE *fp = fopen(buf + 4, "rb");
+            memcpy(filename,buf + 4, message_length-4);
+            //printf("File:%s Length:%d", filename, strlen(filename));
+            for (int i = 0; i<strlen(filename); i++) {
+              if (filename[i] == '\n'){filename[i] = '\0';}
+            }
+            // for (int i = 0; i<strlen(filename)+1; i++) {
+            //   printf("Character: %c, ASCII Value: %d\n", filename[i], filename[i]);
+            // }
+            //printf("File:%s Length:%d", filename, strlen(filename));
+            FILE *fp = fopen(filename, "rb");
             if (fp == NULL){perror("Error opening File");}
+            //Send "{File Name}"
+            n = sendto(sockfd, filename, strlen(buf)-4, 0, &serveraddr, serverlen);
+            if (n < 0) {error("ERROR in sendto");}
+            // SIZE
+            int size;
+            fseek(fp, 0L, SEEK_END);
+            size = ftell(fp);
+            rewind(fp);
+            
+            //Read File and Send
             valread = fread(buf, 1, BUFSIZE, fp);
-            sendto(sockfd, buf, strlen(buf), 0, &serveraddr, serverlen);
+            //printf("SIZE:%d STRING:%d",size, strlen(buf));
+            sendto(sockfd, buf, size,0, &serveraddr, serverlen);
             if (n < 0) {error("ERROR in sendto");}
             fclose(fp);
             n = recvfrom(sockfd, buf, strlen(buf), 0, &serveraddr, &serverlen);
             if (n < 0) 
               error("ERROR in recvfrom");
-            //printf("Echo from server: %s", buf);
         }
   //Delete Command
     if (strncmp(buf, "delete",6) == 0) {
