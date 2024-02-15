@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
       FILE *fp = fopen(buf + 4, "wb");
       valread = recvfrom(sockfd, buf, BUFSIZE, 0,(struct sockaddr *) &serveraddr, &serverlen); if (valread < 0) {error("ERROR in recv");} //Data
       n = fwrite(buf, 1, valread, fp); //Writes valread bytes of data from buf to fp
-      printf("Written: %d Recieved: %d\n",n, valread);
+      //printf("Written: %d Recieved: %d\n",n, valread);
       fclose(fp);
     }
   //Put Command Recieved
@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
             n = recvfrom(sockfd, buf, strlen(buf), 0, &serveraddr, &serverlen);
             if (n < 0) 
               error("ERROR in recvfrom");
-            printf("Echo from server: %s", buf);
+            //printf("Echo from server: %s", buf);
         }
   //Delete Command
     if (strncmp(buf, "delete",6) == 0) {
