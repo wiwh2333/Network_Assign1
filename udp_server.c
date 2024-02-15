@@ -104,12 +104,12 @@ int main(int argc, char **argv) {
     hostp = gethostbyaddr((const char *)&clientaddr.sin_addr.s_addr, 
 			  sizeof(clientaddr.sin_addr.s_addr), AF_INET);
     if (hostp == NULL)
-      error("ERROR on gethostbyaddr");
+      //printf("ERROR on gethostbyaddr");
     hostaddrp = inet_ntoa(clientaddr.sin_addr);
     if (hostaddrp == NULL)
-      error("ERROR on inet_ntoa\n");
-    printf("server received datagram from %s (%s)\n", 
-	   hostp->h_name, hostaddrp);
+      printf("ERROR on inet_ntoa\n");
+    //printf("server received datagram from %s (%s)\n", 
+	   //hostp->h_name, hostaddrp);
     printf("server received %d/%d bytes: %s\n", strlen(buf), n, buf);
     
     
@@ -130,7 +130,7 @@ int main(int argc, char **argv) {
       valread = fread(buf, 1, BUFSIZE, fp); //Read BUFSIZE from the file or until file end
       n = sendto(sockfd, buf, strlen(buf), 0, &clientaddr, clientlen);//Send buf
       if (n < 0) {error("ERROR in sendto");}
-      printf("Written: %d Recieved: %d\n",n, valread);
+      //printf("Written: %d Recieved: %d\n",n, valread);
       fclose(fp);
     }
     //PUT
@@ -141,13 +141,13 @@ int main(int argc, char **argv) {
       if (fp == NULL){perror("Error opening File");}
       valread = recvfrom(sockfd, buf, BUFSIZE, 0,(struct sockaddr *) &clientaddr, &clientlen); if (valread < 0) {error("ERROR in recv");} //Data
       n = fwrite(buf, 1, valread, fp); //Writes valread bytes of data from buf to fp
-      printf("Written: %d Recieved: %d\n",n, valread);
+      //printf("Written: %d Recieved: %d\n",n, valread);
       fclose(fp);
     }
     //DELETE
     if (strncmp(buf, "delete",6) == 0) {
       valread = recvfrom(sockfd, filename, BUFSIZE, 0,(struct sockaddr *) &clientaddr, &clientlen); if (valread < 0) {error("ERROR in recv");} //FileName
-      if (remove("result") == 0){printf("File %s deleted",filename);}
+      if (remove(filename) == 0){printf("File %s deleted",filename);}
       else{ printf("Can't Delete%s",filename);}
     }
     //LS
@@ -166,10 +166,6 @@ int main(int argc, char **argv) {
         if (dir_list[i] == '\n') {dir_list[i] = ' ';}
       }
       int i =0;
-      while(dir_list[i] != '\0'){
-        printf("Character: %c, ASCII value: %d, IValue%d\n", dir_list[i], dir_list[i], i);
-        i++;
-      }
       n = sendto(sockfd, dir_list, strlen(dir_list)+1, 0, &clientaddr, clientlen);//Send buf
       if (n < 0) {error("ERROR in sendto");}
       
