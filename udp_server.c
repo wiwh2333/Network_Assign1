@@ -124,36 +124,35 @@ int main(int argc, char **argv) {
     //GET
     if (strncmp(buf, "get",3) == 0) {
       valread = recvfrom(sockfd, filename, BUFSIZE, 0,(struct sockaddr *) &clientaddr, &clientlen); if (valread < 0) {error("ERROR in recv");} //FileName
-      FILE *fp = fopen(buf + 4, "rb"); //Open File
+      FILE *fp = fopen(filename, "rb"); //Open File
       if (fp == NULL){perror("Error opening File");}
-      
+      // SIZE
+      int size;
+      fseek(fp, 0L, SEEK_END);
+      size = ftell(fp);
+      rewind(fp);
+      //Read File
       valread = fread(buf, 1, BUFSIZE, fp); //Read BUFSIZE from the file or until file end
-      n = sendto(sockfd, buf, strlen(buf), 0, &clientaddr, clientlen);//Send buf
+      n = sendto(sockfd, buf, size, 0, &clientaddr, clientlen);//Send buf
       if (n < 0) {error("ERROR in sendto");}
-      //printf("Written: %d Recieved: %d\n",n, valread);
+      //printf("Written: %d Recieved: %d SIZE: %d\n",n, valread, size);
       fclose(fp);
     }
     //PUT
     if (strncmp(buf, "put",3) == 0) {
       valread = recvfrom(sockfd, filename, BUFSIZE, 0,(struct sockaddr *) &clientaddr, &clientlen); if (valread < 0) {error("ERROR in recv");} //FileName
-      // printf("File:%s", filename);
-      // for (int i = 0; i<strlen(filename)+1; i++) {
-      //         printf("Character: %c, ASCII Value: %d\n", filename[i], filename[i]);
-      //       }
-      //strcat(filename,'\n');
-      //printf("File:%s", filename);
       FILE *fp = fopen(filename, "wb");
       if (fp == NULL){perror("Error opening File");}
       valread = recvfrom(sockfd, buf, BUFSIZE, 0,(struct sockaddr *) &clientaddr, &clientlen); if (valread < 0) {error("ERROR in recv");} //Data
       n = fwrite(buf, 1, valread, fp); //Writes valread bytes of data from buf to fp
-      printf("Written: %d Recieved: %d\n",n, valread);
+      //printf("Written: %d Recieved: %d\n",n, valread);
       fclose(fp);
     }
     //DELETE
     if (strncmp(buf, "delete",6) == 0) {
       valread = recvfrom(sockfd, filename, BUFSIZE, 0,(struct sockaddr *) &clientaddr, &clientlen); if (valread < 0) {error("ERROR in recv");} //FileName
-      if (remove(filename) == 0){printf("File %s deleted",filename);}
-      else{ printf("Can't Delete%s",filename);}
+      if (remove(filename) == 0){printf("File %s deleted\n",filename);}
+      else{ printf("Can't Delete%s\n",filename);}
     }
     //LS
     if (strncmp(buf, "ls",2) == 0) {
