@@ -79,13 +79,19 @@ int main(int argc, char **argv) {
 
   //GET COMMAND   
     if (strncmp(buf, "get",3) == 0) {
+      //Copy buf+4 to filename
+      memcpy(filename,buf + 4, message_length-4);
+      //Get rid of any New Line chars in File name
+            for (int i = 0; i<strlen(filename); i++) {
+              if (filename[i] == '\n'){filename[i] = '\0';}
+            }
       //Send "{File Name}"
-      n = sendto(sockfd, buf + 4, strlen(buf)-4, 0, &serveraddr, serverlen);
+      n = sendto(sockfd, filename, strlen(buf)-4, 0, &serveraddr, serverlen);
       if (n < 0) {error("ERROR in sendto");}
       //ECHO
       n = recvfrom(sockfd, buf, strlen(buf), 0, &serveraddr, &serverlen);
       //Write to File
-      FILE *fp = fopen(buf + 4, "wb");
+      FILE *fp = fopen(filename, "wb");
       valread = recvfrom(sockfd, buf, BUFSIZE, 0,(struct sockaddr *) &serveraddr, &serverlen); if (valread < 0) {error("ERROR in recv");} //Data
       n = fwrite(buf, 1, valread, fp); //Writes valread bytes of data from buf to fp
       //printf("Written: %d Recieved: %d\n",n, valread);
@@ -94,16 +100,13 @@ int main(int argc, char **argv) {
   //Put Command Recieved
     if (strncmp(buf, "put",3) == 0) {
             
-            //Open {File Name}, and sendto until the file is empty
+            //Copy buf+4 to filename
             memcpy(filename,buf + 4, message_length-4);
-            //printf("File:%s Length:%d", filename, strlen(filename));
+            //Get rid of any New Line chars in File name
             for (int i = 0; i<strlen(filename); i++) {
               if (filename[i] == '\n'){filename[i] = '\0';}
             }
-            // for (int i = 0; i<strlen(filename)+1; i++) {
-            //   printf("Character: %c, ASCII Value: %d\n", filename[i], filename[i]);
-            // }
-            //printf("File:%s Length:%d", filename, strlen(filename));
+            //Open File
             FILE *fp = fopen(filename, "rb");
             if (fp == NULL){perror("Error opening File");}
             //Send "{File Name}"
@@ -127,8 +130,14 @@ int main(int argc, char **argv) {
         }
   //Delete Command
     if (strncmp(buf, "delete",6) == 0) {
+        //Copy buf+4 to filename
+        memcpy(filename,buf + 7, message_length-7);
+        //Get rid of any New Line chars in File name
+        for (int i = 0; i<strlen(filename); i++) {
+          if (filename[i] == '\n'){filename[i] = '\0';}
+        }
         //Send "{File Name}"
-        n = sendto(sockfd, buf + 7, strlen(buf)-7, 0, &serveraddr, serverlen);
+        n = sendto(sockfd, filename, strlen(buf)-7, 0, &serveraddr, serverlen);
         if (n < 0) {error("ERROR in sendto");}
     }
   //LS Command
